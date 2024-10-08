@@ -1,108 +1,66 @@
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const { validationResult } = require('express-validator');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 
-// Inscription d'un nouvel utilisateur
-exports.register = async (req, res) => {
-  console.log('Requête d\'inscription reçue:', req.body); // Ajout pour déboguer
+// Créer un utilisateur (uniquement admin)
+const addUser = async (req, res) => {
+    const { username, password, role } = req.body;
 
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
-  const { name, email, password, role } = req.body;
-
-  try {
-    let user = await User.findOne({ email });
-
-    // Vérifie si l'utilisateur existe déjà
-    if (user) {
-      return res.status(400).json({ msg: 'L’utilisateur existe déjà' });
+    // Vérifier si l'utilisateur qui effectue la requête est admin
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Accès refusé, seuls les administrateurs peuvent ajouter des utilisateurs.' });
     }
 
-    // Crée un nouvel utilisateur
-    user = new User({
-      name,
-      email,
-      password,
-      role: role || 'employee'
-    });
+    try {
+        // Vérifier si l'utilisateur existe déjà
+        const userExist = await User.findOne({ username });
+        if (userExist) {
+            return res.status(400).json({ message: 'Cet utilisateur existe déjà.' });
+        }
 
-    // Hash le mot de passe
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
+        // Hasher le mot de passe
+        const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Enregistre l'utilisateur dans la base de données
-    await user.save();
+        // Créer un nouvel utilisateur
+        const newUser = new User({
+            username,
+            password: hashedPassword,
+            role
+        });
 
-    // Crée le payload pour le JWT
-    const payload = {
-      user: {
-        id: user.id,
-        role: user.role
-      }
-    };
+        await newUser.save();
 
-    // Signe le JWT
-    jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: '5h' },
-      (err, token) => {
-        if (err) throw err;
-        res.json({ token });
-      }
-    );
-  } catch (err) {
-    console.error('Erreur lors de l\'inscription:', err.message);
-    res.status(500).send('Erreur serveur');
-  }
+        res.status(201).json({ message: 'Utilisateur créé avec succès' });
+    } catch (error) {
+        res.status(500).json({ message: 'Erreur lors de la création de l’utilisateur', error });
+    }
 };
 
-// Connexion d'un utilisateur
-exports.login = async (req, res) => {
-  console.log('Requête de connexion reçue:', req.body); // Ajout pour déboguer
+// Supprimer un utilisateur (uniquement admin)
+const deleteUser = async (req, res) => {
+    const { userId } = req.params;
 
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-
-  const { email, password } = req.body;
-
-  try {
-    let user = await User.findOne({ email });
-
-    if (!user) {
-      return res.status(400).json({ msg: 'Identifiants invalides' });
+    // Vérifier si l'utilisateur est admin
+    if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Accès refusé, seuls les administrateurs peuvent supprimer des utilisateurs.' });
     }
 
-    const isMatch = await bcrypt.compare(password, user.password);
+    try {
+        // Vérifier si l'utilisateur existe
+        const user = await User.findById(userId);
+        if (!user) {
+            return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+        }
 
-    if (!isMatch) {
-      return res.status(400).json({ msg: 'Identifiants invalides' });
+        await User.findByIdAndDelete(userId);
+
+        res.status(200).json({ message: 'Utilisateur supprimé avec succès.' });
+    } catch (error) {
+        res.status(500).json({ message: 'Erreur lors de la suppression de l’utilisateur', error });
     }
+};
 
-    const payload = {
-      user: {
-        id: user.id,
-        role: user.role
-      }
-    };
-
-    jwt.sign(
-      payload,
-      process.env.JWT_SECRET,
-      { expiresIn: '5h' },
-      (err, token) => {
-        if (err) throw err;
-        res.json({ token });
-      }
-    );
-  } catch (err) {
-    console.error('Erreur lors de la connexion:', err.message);
-    res.status(500).send('Erreur serveur');
-  }
+module.exports = {
+    addUser,
+    deleteUser
 };
