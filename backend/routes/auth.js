@@ -22,28 +22,9 @@ router.post('/register', async (req, res) => {
     }
 });
 
-
-/* Connexion d'un utilisateur
-router.post('/login', async (req, res) => {
-    const { username, password } = req.body;
-    try {
-        const user = await User.findOne({ username });
-        if (!user) return res.status(400).json({ message: 'Utilisateur non trouvé' });
-
-        const isMatch = await user.comparePassword(password);
-        if (!isMatch) return res.status(400).json({ message: 'Mot de passe incorrect' });
-
-        // Génération du token
-        const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '1h' });
-        res.json({ token, user: { id: user._id, username: user.username, role: user.role } });
-    } catch (error) {
-        res.status(400).json({ message: 'Erreur lors de la connexion', error });
-    }
-});*/
-
 router.post('/login', async (req, res) => {
     console.log('Données de connexion reçues:', req.body); // Affiche les données de la requête
-    console.log('Clé JWT utilisée:', JWT_SECRET);  // Assure-toi que ceci affiche la clé
+    console.log('Clé JWT utilisée:', JWT_SECRET); 
 
     const { username, password } = req.body;
     if (!username || !password) {
