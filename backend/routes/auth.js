@@ -22,6 +22,7 @@ router.post('/register', async (req, res) => {
     }
 });
 
+
 router.post('/login', async (req, res) => {
     console.log('Données de connexion reçues:', req.body); // Affiche les données de la requête
     console.log('Clé JWT utilisée:', JWT_SECRET); 
@@ -43,6 +44,34 @@ router.post('/login', async (req, res) => {
     } catch (error) {
         console.error('Erreur lors de la connexion:', error); // Log de l'erreur
         res.status(400).json({ message: 'Erreur lors de la connexion', error });
+    }
+});
+
+// Route pour récupérer les données d'un candidat
+router.get('/:id', async (req, res) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: 'Candidat non trouvé' });
+        }
+        res.json(user);
+    } catch (error) {
+        console.error('Erreur lors de la récupération du candidat:', error);
+        res.status(500).json({ message: 'Erreur lors de la récupération du candidat' });
+    }
+});
+
+// Route pour supprimer un candidat
+router.delete('/:id', async (req, res) => {
+    try {
+        const candidat = await Candidat.findByIdAndDelete(req.params.id);
+        if (!candidat) {
+            return res.status(404).json({ message: 'Candidat non trouvé' });
+        }
+        res.json({ message: 'Candidat supprimé avec succès' });
+    } catch (error) {
+        console.error('Erreur lors de la suppression du candidat:', error);
+        res.status(500).json({ message: 'Erreur serveur' });
     }
 });
 
