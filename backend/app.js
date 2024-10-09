@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const cors = require('cors'); 
 const authRoutes = require('./routes/auth'); 
 const connectDB = require('./config/db');
-const candidatRoutes = require('./routes/candidateRoutes')
+const candidateRoutes = require('./routes/candidateRoutes')
 
 const app = express();
 
@@ -16,14 +16,15 @@ app.use(express.json());
 
 // Middleware CORS
 app.use(cors({
-    origin: 'http://localhost:3000', // Autoriser le frontend à accéder à l'API
+    origin: 'http://localhost:3000', // Autoriser pour le front d'acceder a l'API
 }));
 
 // Routes d'authentification
 app.use('/api/auth', authRoutes); 
 
 // Routes pour les candidats
-app.use('/api/candidat', candidatRoutes); 
+app.use('/api/candidate', candidateRoutes); 
+console.log("Routes candidates chargées");
 
 
 // Démarrer le serveur,
